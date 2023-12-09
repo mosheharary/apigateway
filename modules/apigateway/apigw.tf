@@ -1,16 +1,22 @@
 data "aws_caller_identity" "current" {}
 
+variable "customer_name" {
+  type = string
+  default = "demo"
+}
+
+
 #Lambda
 resource "aws_lambda_function" "hello_world_lambda" {
   filename      = "hello_world_lambda.zip"
-  function_name = "helloWorldLambda"
+  function_name = "${var.customer_name}_helloWorldLambda"
   role          = aws_iam_role.lambda_exec.arn
   handler       = "hello_world_lambda.handler"
   runtime       = "python3.8"
 }
 
 resource "aws_iam_role" "lambda_exec" {
-  name = "lambda_execution_role"
+  name = "${var.customer_name}_lambda_execution_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -25,7 +31,7 @@ resource "aws_iam_role" "lambda_exec" {
 }
 
 resource "aws_lambda_permission" "apigw_lambda" {
-  statement_id  = "AllowExecutionFromAPIGateway"
+  statement_id  = "${var.customer_name}_AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.hello_world_lambda.function_name
   principal     = "apigateway.amazonaws.com"
@@ -35,7 +41,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
 
 # API Gateway
 resource "aws_api_gateway_rest_api" "hello_world_api" {
-  name        = "hello_world_api"
+  name        = "${var.customer_name}_hello_world_api"
   description = "API for Hello World Lambda"
 }
 
@@ -64,7 +70,7 @@ resource "aws_api_gateway_integration" "hello_world_integration" {
 resource "aws_api_gateway_deployment" "hello_world_deployment" {
   depends_on      = [aws_api_gateway_integration.hello_world_integration]
   rest_api_id      = aws_api_gateway_rest_api.hello_world_api.id
-  stage_name       = "prod"
+  stage_name       = var.customer_name
   description      = "Production Deployment"
 }
 

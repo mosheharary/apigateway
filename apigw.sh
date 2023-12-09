@@ -44,6 +44,7 @@ boolean_apply=false
 account_id=""
 aws_region="us-east-1"
 customer_name="demo"
+lock_id=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -105,6 +106,14 @@ while [ "$#" -gt 0 ]; do
         die "Missing value for parameter --customer_name"
       fi
       ;;      
+    --lock_id)
+      shift
+      if [ -n "$1" ]; then
+        lock_id="$1"
+      else
+        die "Missing value for parameter --lock_id"
+      fi
+      ;;      
     --h|-help)
       display_usage
       ;;
@@ -126,7 +135,7 @@ if [ $? -ne 0 ];then
     die "terraform is not installed"
 fi
 
-if [ -z "${account_id} "];then
+if [ -z "${account_id}" ];then
     aws --version > /dev/null 2>&1
     if [ $? -ne 0 ];then 
         die "aws cli is not installed , can not get the account ID"
@@ -165,6 +174,7 @@ test -d ${PWD}/customers/${customer_name} && rm -rf ${PWD}/customers/${customer_
 cp -rf ${PWD}/customers/template ${PWD}/customers/${customer_name}
 sed s/123456789/${account_id}/g -i ${PWD}/customers/${customer_name}/account.hcl 
 sed s/_AWS_REGION_/${aws_region}/g -i ${PWD}/customers/${customer_name}/region.hcl
+sed s/_CUSTOMER_NAME_/${customer_name}/g -i ${PWD}/customers/${customer_name}/customer.hcl
 
 pushd $PWD
 cd ./modules/apigateway
@@ -176,15 +186,25 @@ pushd $PWD
 
 cd customers/${customer_name}/staging
 terragrunt init -backend=true -force-copy --terragrunt-non-interactive
+if [ ! -z "${lock_id}" ];then
+  terragrunt force-unlock -force ${lock_id} --terragrunt-log-level debug --terragrunt-debug
+  popd
+  rm -rf customers/${customer_name}
+  rm -rf modules/apigateway/hello_world_lambda.zip
+  exit 0
+fi
+
 terragrunt refresh
 
 if [ "${boolean_apply}" == "true" ];then 
-    terragrunt apply  -auto-approve
+    terragrunt apply  -var="customer_name=${customer_name}" -auto-approve
 fi
 
 if [ "${boolean_destroy}" == "true" ];then 
-    terragrunt destroy
+    terragrunt destroy -var="customer_name=${customer_name}"
 fi
 popd
+
 rm -rf customers/${customer_name}
+rm -rf modules/apigateway/hello_world_lambda.zip
 

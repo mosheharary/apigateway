@@ -1,10 +1,11 @@
 locals {
   account_vars = read_terragrunt_config(find_in_parent_folders("account.hcl"))
-
+  customer_vars = read_terragrunt_config(find_in_parent_folders("customer.hcl"))
   region_vars = read_terragrunt_config(find_in_parent_folders("region.hcl"))
 
   aws_account = local.account_vars.locals.account
   aws_region = local.region_vars.locals.aws_region
+  customer_name = local.customer_vars.locals.cunstomer_name
 }
 
 
@@ -23,10 +24,10 @@ remote_state {
   backend = "s3"
   config = {
 
-    bucket = "${local.aws_region}-terraform-state-${local.aws_account}"
+    bucket = "${local.customer_name}-${local.aws_region}-terraform-state-${local.aws_account}"
     key            = "terragrunt/${path_relative_to_include()}/terraform.tfstate"
     region         = local.aws_region
-    dynamodb_table = "${local.aws_region}-terraform-locks-${local.aws_account}"
+    dynamodb_table = "${local.customer_name}-${local.aws_region}-terraform-locks-${local.aws_account}"
   }
 }
 
@@ -42,6 +43,7 @@ EOF
 
 inputs = merge(
   local.account_vars.locals,
+  local.customer_vars.locals,
   local.region_vars.locals
 )
 
