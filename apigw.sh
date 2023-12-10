@@ -18,7 +18,7 @@ function etlog() {
 
 function die() {
     d=$(date ${LOG_DATE_FORMAT})    
-    echo -e "${d} [FATAL] $_last_command"
+    echo -e "${d} [FATAL] $@"
     exit 1
 }
 
@@ -45,6 +45,8 @@ account_id=""
 aws_region="us-east-1"
 customer_name="demo"
 lock_id=""
+aws_key=""
+aws_secret=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -58,26 +60,20 @@ while [ "$#" -gt 0 ]; do
       shift
       if [ -n "$1" ]; then
         aws_key="$1"
+	export AWS_ACCESS_KEY_ID=${aws_key}
       else
-        if [ ! -z "${AWS_ACCESS_KEY_ID}"];then
-            aws_key=AWS_ACCESS_KEY_ID
-        else
-            etlog "Error: Missing value for parameter --aws_key or environment AWS_ACCESS_KEY_ID"
-            display_usage
-        fi
+        etlog "Error: Missing value for parameter --aws_key or environment AWS_ACCESS_KEY_ID"
+        display_usage
       fi
       ;;      
     --aws_secret)
       shift
       if [ -n "$1" ]; then
         aws_secret="$1"
+	export AWS_SECRET_ACCESS_KEY=${aws_secret}
       else
-        if [ ! -z "${AWS_SECRET_ACCESS_KEY}"];then
-            aws_secret=$AWS_SECRET_ACCESS_KEY
-        else
-            etlog "Error: Missing value for parameter --aws_secret or environment AWS_SECRET_ACCESS_KEY"
-            display_usage
-        fi
+        etlog "Error: Missing value for parameter --aws_secret or environment AWS_SECRET_ACCESS_KEY"
+        display_usage
       fi
       ;;      
     --account_id)
@@ -124,6 +120,11 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
+
+
+if [[ -z "${AWS_ACCESS_KEY_ID}" ]] || [[ -z "${AWS_SECRET_ACCESS_KEY}" ]];then
+	die "AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY is not set"
+fi
 
 terragrunt --version > /dev/null 2>&1
 if [ $? -ne 0 ];then 
