@@ -54,7 +54,7 @@ while [ "$#" -gt 0 ]; do
       boolean_apply=true  
       ;;
     -d|-destroy)
-      boolean_param=true
+      boolean_destroy=true
       ;;
     --aws_key)
       shift
