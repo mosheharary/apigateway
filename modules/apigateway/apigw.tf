@@ -5,6 +5,10 @@ variable "customer_name" {
   default = "demo"
 }
 
+variable "aws_region" {
+  type = string
+  default = "us-east-1"
+}
 
 #Lambda
 resource "aws_lambda_function" "hello_world_lambda" {
@@ -36,7 +40,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
   function_name = aws_lambda_function.hello_world_lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
-  source_arn = "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.hello_world_api.id}/*/${aws_api_gateway_method.hello_world_method.http_method}${aws_api_gateway_resource.hello_world_resource.path}"
+  source_arn = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.hello_world_api.id}/*/${aws_api_gateway_method.hello_world_method.http_method}${aws_api_gateway_resource.hello_world_resource.path}"
 }
 
 # API Gateway
